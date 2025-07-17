@@ -7,21 +7,23 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class GitHubLoginTest {
 
-    // Test for successful login
     public static void testSuccessfulLogin() {
+        // Initialize the Chrome driver
         WebDriver driver = new ChromeDriver();
         driver.get("https://github.com/login");
 
+        // Locate elements for username, password, and sign-in button
         WebElement username = driver.findElement(By.id("login_field"));
         WebElement password = driver.findElement(By.id("password"));
         WebElement signIn = driver.findElement(By.name("commit"));
 
+        // Input credentials
         username.sendKeys("naveennoni2429@gmail.com");
         password.sendKeys("Github@0310");
         signIn.click();
 
         try {
-            // Expect this only on success
+            // Wait for the profile element to appear, indicating a successful login
             new WebDriverWait(driver, 10).until(
                 ExpectedConditions.presenceOfElementLocated(By.xpath("//summary[@aria-label='View profile and more']"))
             );
@@ -30,24 +32,27 @@ public class GitHubLoginTest {
             System.out.println("✅ Test Case 1: Successful Login to GitHub - Passed");
         }
 
+        // Close the driver
         driver.quit();
     }
 
-    // Test for unsuccessful login
     public static void testUnsuccessfulLogin() {
+        // Initialize the Chrome driver
         WebDriver driver = new ChromeDriver();
         driver.get("https://github.com/login");
 
+        // Locate elements for username, password, and sign-in button
         WebElement username = driver.findElement(By.name("login"));
         WebElement password = driver.findElement(By.name("password"));
         WebElement signIn = driver.findElement(By.name("commit"));
 
+        // Input incorrect credentials
         username.sendKeys("incorrectemail@gmail.com");
         password.sendKeys("incorrectpassword");
         signIn.click();
 
         try {
-            // Wait for the error message
+            // Wait for the error message to appear
             new WebDriverWait(driver, 10).until(
                 ExpectedConditions.presenceOfElementLocated(By.className("flash-error"))
             );
@@ -56,6 +61,7 @@ public class GitHubLoginTest {
             System.out.println("✅ Test Case 2: Unsuccessful Login to GitHub with invalid credentials - Passed");
         }
 
+        // Close the driver
         driver.quit();
     }
 
