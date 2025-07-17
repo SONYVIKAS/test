@@ -1,0 +1,36 @@
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+public class Main {
+
+    // Method to find the longest word in a list of words
+    public static int findLongestWord(String[] words) {
+        int longest = 0;
+
+        // Iterate over the words
+        for (String word : words) {
+            // Update the longest word length
+            longest = Math.max(word.length(), longest);
+        }
+
+        // Return the length of the longest word
+        return longest;
+    }
+
+    // Test class
+    public static class TestSolution {
+
+        @Test
+        // Test method for findLongestWord
+        public void testFindLongestWord() {
+            // Assert the results
+            assertEquals(5, Main.findLongestWord(new String[]{"hi", "hello"}));
+            assertEquals(12, Main.findLongestWord(new String[]{"Balloonicorn", "Hackbright"}));
+        }
+    }
+
+    // Main method to run the tests
+    public static void main(String[] args) {
+        // Run the tests
+        org.junit.runner.JUnitCore.main("Main$TestSolution");
+    }
