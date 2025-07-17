@@ -1,0 +1,290 @@
+import java.util.*;
+import java.util.regex.*;
+
+// Class to find matches in a CSV file based on email, phone or both
+public class FindMatches {
+    private String input_file;
+    private String matching_type;
+    private int rownum = 0;
+    private String[] header;
+    private Integer email_col_2 = null;
+    private Integer email_col = null;
+    private Integer phone_col_2 = null;
+    private Integer phone_col = null;
+    private HashMap<String, Integer> ids = new HashMap<>();
+    private int id = 1;
+
+    // Constructor
+    public FindMatches(String input_file, String matching_type) throws IOException {
+        this.input_file = input_file;
+        this.matching_type = matching_type.toLowerCase();
+
+        // Check if matching_type input is valid
+        if (!Arrays.asList("email", "phone", "email_phone").contains(this.matching_type)) {
+            System.out.println("Please use a valid matching type: 'email', 'phone', or 'email_phone'.");
+            return;
+        }
+
+        // Open the file with a csv reader
+        BufferedReader csvReader = new BufferedReader(new FileReader(this.input_file));
+        String row;
+        while ((row = csvReader.readLine()) != null) {
+            if (this.rownum == 0) {
+                this.header = row.split(",");
+                this.rownum += 1;
+                break;
+            }
+        }
+
+        // Get the column number(s) for email
+        for (int col = 0; col < this.header.length; col++) {
+            if (this.header[col].toLowerCase().contains("email2")) {
+                this.email_col_2 = col;
+            }
+            if (this.header[col].toLowerCase().contains("email1") || "email".equals(this.header[col].toLowerCase())) {
+                this.email_col = col;
+            }
+        }
+
+        // Get the column number(s) for phone
+        for (int col = 0; col < this.header.length; col++) {
+            if (this.header[col].toLowerCase().contains("phone2")) {
+                this.phone_col_2 = col;
+            }
+            if (this.header[col].toLowerCase().contains("phone1") || "phone".equals(this.header[col].toLowerCase())) {
+                this.phone_col = col;
+            }
+        }
+
+        // Write to csv after all ids are assigned
+        this.write_csv(csvReader);
+    }
+
+    // Method to match emails
+    private int email_match(String[] row, Integer min_id) {
+        Integer row_id = null;
+        Integer iden = min_id != null ? min_id : this.id;
+
+        // Checks if a second email column exists
+        if (this.email_col_2 != null) {
+            // Checks if value exists in second email column/row, and assigns it as the key
+            if (!row[this.email_col_2].isEmpty()) {
+                String email2 = row[this.email_col_2];
+                this.add_key_to_dict(email2, iden);
+
+                // If key exists in dictionary, assign it the row_id
+                if (this.ids.get(email2) != null) {
+                    row_id = this.ids.get(email2);
+                }
+            }
+        }
+
+        // Checks if value exists in first email column/row, and assigns it as the key
+        if (!row[this.email_col].isEmpty()) {
+            String email1 = row[this.email_col];
+            // Sets the row_id to the minimum common value if it exists, otherwise sets it to the next available identifier value
+            this.add_key_to_dict(email1, iden);
+            row_id = this.ids.getOrDefault(email1, this.id);
+        }
+
+        // If no value in the field, sets the row_id to the next available identifier value
+        if (row_id == null) {
+            row_id = this.id;
+        }
+
+        return row_id;
+    }
+
+    // Method to format phone numbers
+    private String format_phone(String[] row, int column) {
+        String format_phone_col = row[column].replaceAll("\\D+","");
+
+        if (format_phone_col.length() > 10) {
+            format_phone_col = format_phone_col.substring(1);
+        }
+
+        return format_phone_col;
+    }
+
+    // Method to match phone numbers
+    private int phone_match(String[] row, Integer min_id) {
+        Integer row_id = null;
+        Integer iden = min_id != null ? min_id : this.id;
+
+        // Checks if a second phone column exists
+        if (this.phone_col_2 != null) {
+            // Checks if value exists in second phone column/row, and assigns it as the key
+            if (!row[this.phone_col_2].isEmpty()) {
+                String ids_key = this.format_phone(row, this.phone_col_2);
+                this.add_key_to_dict(ids_key, iden);
+
+                // If key exists in dictionary, assign it the row_id
+                if (this.ids.get(ids_key) != null) {
+                    row_id = this.ids.get(ids_key);
+                }
+            }
+        }
+
+        if (!row[this.phone_col].isEmpty()) {
+            String ids_key = this.format_phone(row, this.phone_col);
+            // Sets the row_id to the minimum common value if it exists, otherwise sets it to the next available identifier value
+            this.add_key_to_dict(ids_key, iden);
+            row_id = this.ids.getOrDefault(ids_key, this.id);
+        }
+
+        // If no value in the field, sets the row_id to the next available identifier value
+        if (row_id == null) {
+            row_id = this.id;
+        }
+
+        return row_id;
+    }
+
+    // Method to add keys to dictionary
+    private void add_key_to_dict(String ids_key, int iden) {
+        this.ids.putIfAbsent(ids_key, iden);
+    }
+
+    // Method to write CSV
+    private void write_csv(BufferedReader csvReader) throws IOException {
+        FileWriter csvWriter = new FileWriter("output_file.csv");
+
+        // Add 'id' column to header
+        String[] newHeader = new String[this.header.length + 1];
+        newHeader[0] = "id";
+        System.arraycopy(this.header, 0, newHeader, 1, this.header.length);
+        csvWriter.append(String.join(",", newHeader));
+        csvWriter.append("\n");
+
+        String row;
+        while ((row = csvReader.readLine()) != null) {
+            String[] data = row.split(",");
+            Integer row_id = null;
+            Integer email_row_id = null;
+            Integer phone_row_id = null;
+
+            // If the matching type is 'email'
+            if (this.matching_type.equals("email")) {
+                String email2 = null;
+                String email1 = null;
+                Integer min_id = null;
+
+                // Check if email columns exist
+                if (this.email_col_2 != null) {
+                    email2 = data[this.email_col_2];
+                }
+                if (this.email_col != null) {
+                    email1 = data[this.email_col];
+                }
+
+                // Check if either email is in ids dictionary, get the value
+                if (this.ids.containsKey(email2) || this.ids.containsKey(email1)) {
+                    Integer email2_exists = this.ids.get(email2);
+                    Integer email_exists = this.ids.get(email1);
+
+                    // If multiple values exist, find the lowest and set that to min_id (row_id)
+                    List<Integer> id_values = Arrays.asList(email2_exists, email_exists);
+                    min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                }
+
+                // See if a second email column exists
+                row_id = this.email_match(data, min_id);
+            }
+
+            // If the matching type is 'phone'
+            else if (this.matching_type.equals("phone")) {
+                String phone2 = null;
+                String phone1 = null;
+                Integer min_id = null;
+
+                // Check if phone columns exist
+                if (this.phone_col_2 != null) {
+                    phone2 = this.format_phone(data, this.phone_col_2);
+                }
+                if (this.phone_col != null) {
+                    phone1 = this.format_phone(data, this.phone_col);
+                }
+
+                // Check if either email is in ids dictionary, get the value
+                if (this.ids.containsKey(phone2) || this.ids.containsKey(phone1)) {
+                    Integer phone2_exists = this.ids.get(phone2);
+                    Integer phone_exists = this.ids.get(phone1);
+
+                    // If multiple values exist, find the lowest and set that to min_id (row_id)
+                    List<Integer> id_values = Arrays.asList(phone2_exists, phone_exists);
+                    min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                }
+
+                // See if a second phone column exists
+                row_id = this.phone_match(data, min_id);
+            }
+
+            // If the matching type is email OR phone
+            else if (this.matching_type.equals("email_phone")) {
+                String email2 = null;
+                String email1 = null;
+                String phone2 = null;
+                String phone1 = null;
+                Integer min_id = null;
+
+                // Check if email and phone columns exist
+                if (this.email_col_2 != null) {
+                    email2 = data[this.email_col_2];
+                }
+                if (this.email_col != null) {
+                    email1 = data[this.email_col];
+                }
+                if (this.phone_col_2 != null) {
+                    phone2 = this.format_phone(data, this.phone_col_2);
+                }
+                if (this.phone_col != null) {
+                    phone1 = this.format_phone(data, this.phone_col);
+                }
+
+                // Check if either email or phone is in ids dictionary, get the value
+                if (this.ids.containsKey(email2) || this.ids.containsKey(email1) || this.ids.containsKey(phone2) || this.ids.containsKey(phone1)) {
+                    Integer email2_exists = this.ids.get(email2);
+                    Integer email_exists = this.ids.get(email1);
+                    Integer phone2_exists = this.ids.get(phone2);
+                    Integer phone_exists = this.ids.get(phone1);
+
+                    // If multiple values exist, find the lowest and set that to min_id (row_id)
+                    List<Integer> id_values = Arrays.asList(email2_exists, email_exists, phone2_exists, phone_exists);
+                    min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                    row_id = min_id;
+                }
+
+                email_row_id = this.email_match(data, min_id);
+                phone_row_id = this.phone_match(data, min_id);
+
+                if (email_row_id < phone_row_id) {
+                    row_id = email_row_id;
+                } else {
+                    row_id = phone_row_id;
+                }
+            }
+
+            // Writes a new row with the id appended
+            String[] newRow = new String[data.length + 1];
+            newRow[0] = row_id.toString();
+            System.arraycopy(data, 0, newRow, 1, data.length);
+            csvWriter.append(String.join(",", newRow));
+            csvWriter.append("\n");
+
+            // Increments id in ids dictionary for unique row ids
+            this.id += 1;
+        }
+
+        csvReader.close();
+        csvWriter.flush();
+        csvWriter.close();
+    }
+
+    // Main method to run the program
+    public static void main(String[] args) {
+        try {
+            new FindMatches(args[0], args[1]);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
