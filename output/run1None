@@ -1,0 +1,57 @@
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.NoSuchElementException;
+
+public class GitHubLoginTest {
+
+    public static void testLoginToGitHub() {
+        // Initialize the Firefox driver
+        WebDriver driver = new FirefoxDriver();
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
+        try {
+            // Open the web browser and go to GitHub login page
+            driver.get("https://github.com/login");
+
+            // Enter the username
+            WebElement username = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("login_field")));
+            username.sendKeys("naveennoni2429@gmail.com");
+
+            // Enter the password
+            WebElement password = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("password")));
+            password.sendKeys("Github@0310");
+
+            // Click on the "Sign in" button
+            WebElement signIn = wait.until(ExpectedConditions.presenceOfElementLocated(By.name("commit")));
+            signIn.click();
+
+            // Navigate to the "codegendev" repository
+            driver.get("https://github.com/naveennoni2429/codegendev");
+
+            // Inside the repository, navigate to the "output" directory
+            driver.get("https://github.com/naveennoni2429/codegendev/tree/main/output");
+
+            // Inside the "output" directory, navigate to the "programs" folder
+            driver.get("https://github.com/naveennoni2429/codegendev/tree/main/output/programs");
+
+            // Inside the "programs" folder, open the "add_to_zero.py" file
+            driver.get("https://github.com/naveennoni2429/codegendev/blob/main/output/programs/add_to_zero.py");
+
+            System.out.println("Test passed");
+
+        } catch (NoSuchElementException ex) {
+            System.out.println("Test failed, element not found.");
+            System.out.println(ex.toString());
+
+        } finally {
+            // Close the browser
+            driver.quit();
+        }
+    }
+
+    public static void main(String[] args) {
+        testLoginToGitHub();
+    }
