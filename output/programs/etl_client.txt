@@ -1,0 +1,73 @@
+import java.util.*;
+
+// Custom exception to handle RetryImmediatelyError
+class RetryImmediatelyError extends Exception {
+    public RetryImmediatelyError(String errorMessage) {
+        super(errorMessage);
+    }
+}
+
+// DocumentService interface to be implemented by the service
+interface DocumentService {
+    JSONObject handleRequest() throws RetryImmediatelyError;
+}
+
+public class ETLClient {
+    public String run(DocumentService service, int maxRequests) throws RetryImmediatelyError {
+        JSONObject documents = new JSONObject();
+        documents.put("doc-count", 0);
+        documents.put("error-count", 0);
+        documents.put("docs", new JSONObject());
+
+        for (int i = 0; i < maxRequests; i++) {
+            while (true) {
+                try {
+                    JSONObject event = service.handleRequest();
+
+                    if (event.getString("operation").equals("add")) {
+                        String docId = event.getJSONObject("document").getString("id");
+                        List<String> docData = removeWords(event.getJSONObject("document").getString("data"));
+
+                        // adds new doc_id and data
+                        documents.getJSONObject("docs").put(docId, docData);
+
+                        // counts number of documents
+                        documents.put("doc-count", documents.getInt("doc-count") + 1);
+                    }
+
+                    if (event.getString("operation").equals("update")) {
+                        String docId = event.getJSONObject("document").getString("id");
+                        List<String> docData = removeWords(event.getJSONObject("document").getString("data"));
+
+                        // updates doc data by on doc id
+                        documents.getJSONObject("docs").put(docId, docData);
+                    }
+
+                    if (event.getString("operation").equals("delete")) {
+                        // removes document
+                        String docId = event.getString("document-id");
+                        documents.getJSONObject("docs").remove(docId);
+
+                        // subtracts 1 from number of documents
+                        documents.put("doc-count", documents.getInt("doc-count") - 1);
+                    }
+                } catch (RetryImmediatelyError e) {
+                    // counts number of retry errors
+                    documents.put("error-count", documents.getInt("error-count") + 1);
+                    continue;
+                }
+                break;
+            }
+        }
+        return documents.toString();
+    }
+
+    private List<String> removeWords(String string) {
+        // sanitizes string data in documents
+        Set<String> removeWords = new HashSet<>(Arrays.asList("and", "or", "not", "but", "to", "in"));
+        List<String> words = new ArrayList<>(Arrays.asList(string.toLowerCase().split(" ")));
+
+        words.removeIf(removeWords::contains);
+
+        return words;
+    }
