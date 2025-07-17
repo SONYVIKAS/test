@@ -1,0 +1,67 @@
+import java.util.ArrayList;
+import java.util.List;
+
+// Node class
+public class Node {
+    // Node properties
+    private String name;
+    private List<Node> children;
+
+    // Node constructor
+    public Node(String name) {
+        this.name = name;
+        this.children = new ArrayList<>();
+    }
+
+    // Node constructor with children
+    public Node(String name, List<Node> children) {
+        this.name = name;
+        this.children = children;
+    }
+
+    // Method to count employees
+    public int countEmployees() {
+        // If node has no children, return 0
+        if (this.children.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+
+        // For each child, increment count and add the count of their children
+        for (Node child : this.children) {
+            count += 1 + child.countEmployees();
+        }
+
+        return count;
+    }
+
+    // Main method for testing
+    public static void main(String[] args) {
+        Node henri = new Node("Henri");
+        List<Node> noraChildren = new ArrayList<>();
+        noraChildren.add(henri);
+        Node nora = new Node("Nora", noraChildren);
+        Node nick = new Node("Nick");
+        List<Node> janetChildren = new ArrayList<>();
+        janetChildren.add(nick);
+        janetChildren.add(nora);
+        Node janet = new Node("Janet", janetChildren);
+        Node al = new Node("Al");
+        Node bob = new Node("Bob");
+        Node jen = new Node("Jen");
+        List<Node> jessicaChildren = new ArrayList<>();
+        jessicaChildren.add(al);
+        jessicaChildren.add(bob);
+        jessicaChildren.add(jen);
+        Node jessica = new Node("Jessica", jessicaChildren);
+        List<Node> janeChildren = new ArrayList<>();
+        janeChildren.add(jessica);
+        janeChildren.add(janet);
+        Node jane = new Node("Jane", janeChildren);
+
+        System.out.println(henri.countEmployees()); // Should print 0
+        System.out.println(janet.countEmployees()); // Should print 3
+        System.out.println(jessica.countEmployees()); // Should print 3
+        System.out.println(jane.countEmployees()); // Should print 8
+    }
