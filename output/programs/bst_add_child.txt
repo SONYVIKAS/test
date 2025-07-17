@@ -1,0 +1,51 @@
+class Node {
+    int data;
+    Node left, right;
+
+    // Node constructor
+    Node(int item) {
+        data = item;
+        left = right = null;
+    }
+
+    // Method to insert a new node in BST
+    void insert(int new_data) {
+        // If the tree is empty, assign a new node address to the root
+        if (new_data < this.data) {
+            if (this.left == null) {
+                this.left = new Node(new_data);
+            } else {
+                this.left.insert(new_data);
+            }
+        } else {
+            if (this.right == null) {
+                this.right = new Node(new_data);
+            } else {
+                this.right.insert(new_data);
+            }
+        }
+    }
+}
+
+// Main class
+public class Main {
+    public static void main(String[] args) {
+        // Create a new BST
+        Node t = new Node(4);
+        t.left = new Node(2);
+        t.left.left = new Node(1);
+        t.left.right = new Node(3);
+        t.right = new Node(7);
+        t.right.left = new Node(5);
+        t.right.right = new Node(8);
+
+        // Insert new nodes
+        t.insert(0);
+        t.insert(9);
+        t.insert(6);
+
+        // Print out the data of the nodes to check if they are inserted correctly
+        System.out.println(t.left.left.left.data); // Should print 0
+        System.out.println(t.right.right.right.data); // Should print 9
+        System.out.println(t.right.left.right.data); // Should print 6
+    }
