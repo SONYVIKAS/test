@@ -1,0 +1,52 @@
+
+public class Main {
+
+    // Method to decode a string
+    public static String decode(String s) {
+        // Runtime: O(n)
+        // Spacetime: O(n)
+
+        StringBuilder decoded = new StringBuilder();
+
+        for (int l = 0; l < s.length(); l++) {
+            if (Character.isDigit(s.charAt(l))) {
+                decoded.append(s.charAt(Integer.parseInt(String.valueOf(s.charAt(l))) + l + 1));
+            }
+        }
+
+        return decoded.toString();
+    }
+
+    // Method to decode a string using recursion
+    public static String decode_2(String s) {
+        // Runtime: O(n)
+        // Spacetime: O(n)
+
+        return _decode_2(s, new StringBuilder(), 0);
+    }
+
+    private static String _decode_2(String s, StringBuilder decoded, int i) {
+
+        if (i >= s.length()) {
+            return decoded.toString();
+        }
+
+        char current = s.charAt(i);
+
+        if (Character.isDigit(current)) {
+            decoded.append(s.charAt(Integer.parseInt(String.valueOf(current)) + i + 1));
+        }
+
+        return _decode_2(s, decoded, i+1);
+    }
+
+    public static void main(String[] args) {
+        // Test cases
+        System.out.println(decode("0h")); // Expected output: 'h'
+        System.out.println(decode("2abh")); // Expected output: 'h'
+        System.out.println(decode("0h1ae2bcy")); // Expected output: 'hey'
+
+        System.out.println(decode_2("0h")); // Expected output: 'h'
+        System.out.println(decode_2("2abh")); // Expected output: 'h'
+        System.out.println(decode_2("0h1ae2bcy")); // Expected output: 'hey'
+    }
