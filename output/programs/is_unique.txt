@@ -1,0 +1,38 @@
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import java.util.HashSet;
+import java.util.Set;
+
+public class Main {
+    // Method to check if a string has all unique characters
+    public static boolean isUnique(String str) {
+        // Create a set from the string
+        Set<Character> set = new HashSet<>();
+        for (char c : str.toCharArray()) {
+            set.add(c);
+        }
+
+        // Return true if the size of the set is equal to the length of the string
+        // (i.e., all characters in the string were unique)
+        return set.size() == str.length();
+    }
+
+    // Unit tests
+    public static class Tests {
+        @Test
+        public void testIsUnique() {
+            assertEquals(true, isUnique("asdfghjkl"));
+            assertEquals(true, isUnique("1234567asdf"));
+            assertEquals(true, isUnique("!@#$%^&asdfg123"));
+            assertEquals(true, isUnique("abcdABCD"));
+
+            assertEquals(false, isUnique("asdfghjkll"));
+            assertEquals(false, isUnique("1qwerty1"));
+            assertEquals(false, isUnique("poiu$asdf$"));
+        }
+    }
+
+    // Main method to run tests
+    public static void main(String[] args) {
+        org.junit.runner.JUnitCore.main("Main.Tests");
+    }
