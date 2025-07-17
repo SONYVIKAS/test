@@ -1,0 +1,56 @@
+
+// Class to check if a string has balanced brackets
+public class BalancedBrackets {
+
+    public static boolean hasBalancedBrackets(String phrase) {
+        // Define the mapping of closing brackets to their corresponding opening brackets
+        Map<Character, Character> brackets = new HashMap<>();
+        brackets.put(']', '[');
+        brackets.put('}', '{');
+        brackets.put('>', '<');
+        brackets.put(')', '(');
+
+        // Define the sets of opening and closing brackets
+        Set<Character> openBrackets = new HashSet<>(Arrays.asList('[', '{', '<', '('));
+        Set<Character> closeBrackets = new HashSet<>(Arrays.asList(']', '}', '>', ')'));
+
+        // List to keep track of the opening brackets we have seen so far
+        List<Character> seen = new ArrayList<>();
+
+        // Iterate over the characters in the phrase
+        for (char let : phrase.toCharArray()) {
+            // If the character is an opening bracket, add it to the seen list
+            if (openBrackets.contains(let)) {
+                seen.add(let);
+            }
+            // If the character is a closing bracket
+            if (closeBrackets.contains(let)) {
+                // If the seen list is not empty and the last seen opening bracket matches the current closing bracket
+                if (!seen.isEmpty() && brackets.get(let) == seen.get(seen.size() - 1)) {
+                    // Remove the last seen opening bracket
+                    seen.remove(seen.size() - 1);
+                } else {
+                    // If the seen list is empty or the last seen opening bracket does not match the current closing bracket, return false
+                    return false;
+                }
+            }
+        }
+
+        // If the seen list is empty, all brackets were balanced, so return true
+        // Otherwise, there were unmatched opening brackets, so return false
+        return seen.isEmpty();
+    }
+
+    public static void main(String[] args) {
+        // Test the hasBalancedBrackets function
+        assert hasBalancedBrackets("<ok>");
+        assert hasBalancedBrackets("<[ok]>");
+        assert hasBalancedBrackets("<[{(yay)}]>");
+        assert hasBalancedBrackets("No brackets here!");
+
+        assert !hasBalancedBrackets("(Oops!){");
+        assert !hasBalancedBrackets("{[[This has too many open square brackets.]}");
+        assert !hasBalancedBrackets(">");
+        assert !hasBalancedBrackets("(This has {too many} ) closers. )");
+        assert !hasBalancedBrackets("<{Not Ok>}");
+    }
