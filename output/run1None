@@ -10,7 +10,7 @@ public class GitHubLoginTest {
     public static void testLoginToGitHub() {
         // Initialize the Firefox WebDriver
         WebDriver driver = new FirefoxDriver();
-        // Set up an explicit wait with a timeout of 10 seconds
+        // Set up the WebDriverWait with a timeout of 10 seconds
         WebDriverWait wait = new WebDriverWait(driver, 10);
 
         try {
@@ -45,7 +45,7 @@ public class GitHubLoginTest {
 
         } catch (NoSuchElementException ex) {
             System.out.println("Test failed, element not found.");
-            System.out.println(ex.toString());
+            System.out.println(ex.getMessage());
 
         } finally {
             // Close the browser
