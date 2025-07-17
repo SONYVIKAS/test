@@ -1,0 +1,48 @@
+
+// Class to find the mode(s) of an array
+public class FindMode {
+    public static void main(String[] args) {
+        // Test cases
+        System.out.println(findMode(new int[]{3,5,6,2,6,7,8,3,6,6})); // Expected output: [6]
+        System.out.println(findMode(new int[]{1,2,3,4,5})); // Expected output: [1, 2, 3, 4, 5]
+        System.out.println(findMode(new int[]{2,1,2,1})); // Expected output: [1, 2]
+        System.out.println(findMode(new int[]{1,2,3,2,4})); // Expected output: [2]
+        System.out.println(findMode(new int[]{})); // Expected output: []
+    }
+
+    // Method to find the mode(s) of an array
+    public static Set<Integer> findMode(int[] arr) {
+        // If array is empty, return empty set
+        if (arr.length == 0) {
+            return new HashSet<>();
+        }
+        // If array has only one element, return a set with that element
+        if (arr.length < 2) {
+            return new HashSet<>(Collections.singletonList(arr[0]));
+        }
+
+        // Map to store the frequency of each number
+        Map<Integer, Integer> nums = new HashMap<>();
+        // Set to store the mode(s)
+        Set<Integer> modes = new HashSet<>();
+        int maxCount = 0;
+
+        // Count the frequency of each number
+        for (int num : arr) {
+            nums.put(num, nums.getOrDefault(num, 0) + 1);
+        }
+
+        // Find the mode(s)
+        for (Map.Entry<Integer, Integer> entry : nums.entrySet()) {
+            int count = entry.getValue();
+            if (count > maxCount) {
+                maxCount = count;
+                modes.clear();
+                modes.add(entry.getKey());
+            } else if (count == maxCount) {
+                modes.add(entry.getKey());
+            }
+        }
+
+        return modes;
+    }
