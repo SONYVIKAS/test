@@ -1,255 +1,290 @@
+import java.io.*;
 import java.util.*;
 import java.util.regex.*;
-import com.opencsv.*;
 
-// Class to find matches in a CSV file based on email, phone or both
 public class FindMatches {
-
-    private String input_file;
-    private String matching_type;
+    // Declare necessary variables
+    private String matchingType;
+    private String inputFile;
     private int rownum = 0;
-    private String[] header;
-    private Integer email_col_2 = null;
-    private Integer email_col = null;
-    private Integer phone_col_2 = null;
-    private Integer phone_col = null;
+    private String[] header = null;
+    private Integer emailCol2 = null;
+    private Integer emailCol = null;
+    private Integer phoneCol2 = null;
+    private Integer phoneCol = null;
     private HashMap<String, Integer> ids = new HashMap<>();
     private int id = 1;
 
-    // Constructor
-    public FindMatches(String input_file, String matching_type) {
-        this.input_file = input_file;
-        this.matching_type = matching_type.toLowerCase();
-
-        if (!Arrays.asList("email", "phone", "email_phone").contains(this.matching_type)) {
+    public FindMatches(String inputFile, String matchingType) {
+        // Check if matchingType input is valid
+        this.matchingType = matchingType.toLowerCase();
+        if (!Arrays.asList("email", "phone", "email_phone").contains(this.matchingType)) {
             System.out.println("Please use a valid matching type: 'email', 'phone', or 'email_phone'.");
-            return;
         }
 
-        try {
-            CSVReader reader = new CSVReader(new FileReader(this.input_file));
+        // Initialize variables for later assignment
+        this.inputFile = inputFile;
 
-            // Get the header
-            this.header = reader.readNext();
-            this.rownum++;
+        // Open the file with a csv reader
+        try (BufferedReader reader = new BufferedReader(new FileReader(this.inputFile))) {
+            // Declare the header for the file
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (this.rownum == 0) {
+                    this.header = line.split(",");
+                    this.rownum += 1;
+                    break;
+                }
+            }
 
-            // Get the column numbers for email
+            // Get the column number(s) for email
             for (int col = 0; col < this.header.length; col++) {
                 if (this.header[col].toLowerCase().contains("email2")) {
-                    this.email_col_2 = col;
+                    this.emailCol2 = col;
                 }
-                if (this.header[col].toLowerCase().contains("email1") || this.header[col].toLowerCase().equals("email")) {
-                    this.email_col = col;
+                if (this.header[col].toLowerCase().contains("email1") || "email".equals(this.header[col].toLowerCase())) {
+                    this.emailCol = col;
                 }
             }
 
-            // Get the column numbers for phone
+            // Get the column number(s) for phone
             for (int col = 0; col < this.header.length; col++) {
                 if (this.header[col].toLowerCase().contains("phone2")) {
-                    this.phone_col_2 = col;
+                    this.phoneCol2 = col;
                 }
-                if (this.header[col].toLowerCase().contains("phone1") || this.header[col].toLowerCase().equals("phone")) {
-                    this.phone_col = col;
+                if (this.header[col].toLowerCase().contains("phone1") || "phone".equals(this.header[col].toLowerCase())) {
+                    this.phoneCol = col;
                 }
             }
 
-            // Write to CSV after all ids are assigned
-            this.write_csv(reader, this.header);
-
-        } catch (Exception e) {
+            // Write to csv after all ids are assigned
+            this.writeCsv(reader);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    // Method to create email tuples and insert unique tuples into the ids dictionary
-    private int email_match(String[] row, Integer min_id) {
-        Integer row_id = null;
-        Integer iden = (min_id != null) ? min_id : this.id;
+    private int emailMatch(String[] row, Integer minId) {
+        // Creates email tuples and insert unique tuples into the ids dictionary.
+        Integer rowId = null;
 
-        // Check if a second email column exists
-        if (this.email_col_2 != null) {
-            // Check if value exists in second email column/row, and assigns it as the key
-            if (row[this.email_col_2] != null) {
-                String email2 = row[this.email_col_2];
-                this.add_key_to_dict(email2, iden);
+        // Assigns the id value to minId if it exists, otherwise assigns it the next id value available
+        int iden = minId != null ? minId : this.id;
 
-                // If key exists in dictionary, assign it the row_id
+        // Checks if a second email column exists
+        if (this.emailCol2 != null) {
+            // Checks if value exists in second email column/row, and assigns it as the key
+            if (!row[this.emailCol2].isEmpty()) {
+                String email2 = row[this.emailCol2];
+                this.addKeyToDict(email2, iden);
+
+                // If key exists in dictionary, assign it the rowId
                 if (this.ids.get(email2) != null) {
-                    row_id = this.ids.get(email2);
+                    rowId = this.ids.get(email2);
                 }
             }
         }
 
-        // Check if value exists in first email column/row, and assigns it as the key
-        if (row[this.email_col] != null) {
-            String email1 = row[this.email_col];
-            // Sets the row_id to the minimum common value if it exists, otherwise sets it to the next available identifier value
-            this.add_key_to_dict(email1, iden);
-            row_id = this.ids.getOrDefault(email1, this.id);
+        // Checks if value exists in first email column/row, and assigns it as the key
+        if (!row[this.emailCol].isEmpty()) {
+            String email1 = row[this.emailCol];
+            // Sets the rowId to the minimum common value if it exists, otherwise sets it to the next available identifier value
+            this.addKeyToDict(email1, iden);
+            rowId = this.ids.getOrDefault(email1, this.id);
         }
 
-        // If no value in the field, sets the row_id to the next available identifier value
-        if (row_id == null) {
-            row_id = this.id;
+        // If no value in the field, sets the rowId to the next available identifier value
+        if (rowId == null) {
+            rowId = this.id;
         }
 
-        return row_id;
+        return rowId;
     }
 
-    // Method to remove formatting of phone numbers for direct comparison
-    private String format_phone(String[] row, int column) {
-        String format_phone_col = row[column].replaceAll("\\D+","");
+    private String formatPhone(String[] row, int column) {
+        // Removes formatting of phone numbers for direct comparison.
+        String formatPhoneCol = row[column].replaceAll("\\D+","");
 
-        if (format_phone_col.length() > 10) {
-            format_phone_col = format_phone_col.substring(1);
+        if (formatPhoneCol.length() > 10) {
+            formatPhoneCol = formatPhoneCol.substring(1);
         }
 
-        return format_phone_col;
+        return formatPhoneCol;
     }
 
-    // Method to create phone tuples and insert unique tuples into the ids dictionary
-    private int phone_match(String[] row, Integer min_id) {
-        Integer row_id = null;
-        Integer iden = (min_id != null) ? min_id : this.id;
+    private int phoneMatch(String[] row, Integer minId) {
+        // Creates phone tuples and insert unique tuples into the ids dictionary.
+        Integer rowId = null;
 
-        // Check if a second phone column exists
-        if (this.phone_col_2 != null) {
-            // Check if value exists in second phone column/row, and assigns it as the key
-            if (row[this.phone_col_2] != null) {
-                String ids_key = this.format_phone(row, this.phone_col_2);
-                this.add_key_to_dict(ids_key, iden);
+        // Assigns the id value to minId if it exists, otherwise assigns it the next id value available
+        int iden = minId != null ? minId : this.id;
 
-                // If key exists in dictionary, assign it the row_id
-                if (this.ids.get(ids_key) != null) {
-                    row_id = this.ids.get(ids_key);
+        // Checks if a second phone column exists
+        if (this.phoneCol2 != null) {
+            // Checks if value exists in second phone column/row, and assigns it as the key
+            if (!row[this.phoneCol2].isEmpty()) {
+                String idsKey = this.formatPhone(row, this.phoneCol2);
+                this.addKeyToDict(idsKey, iden);
+
+                // If key exists in dictionary, assign it the rowId
+                if (this.ids.get(idsKey) != null) {
+                    rowId = this.ids.get(idsKey);
                 }
             }
         }
 
-        if (row[this.phone_col] != null) {
-            String ids_key = this.format_phone(row, this.phone_col);
-            // Sets the row_id to the minimum common value if it exists, otherwise sets it to the next available identifier value
-            this.add_key_to_dict(ids_key, iden);
-            row_id = this.ids.getOrDefault(ids_key, this.id);
+        if (!row[this.phoneCol].isEmpty()) {
+            String idsKey = this.formatPhone(row, this.phoneCol);
+            // Sets the rowId to the minimum common value if it exists, otherwise sets it to the next available identifier value
+            this.addKeyToDict(idsKey, iden);
+            rowId = this.ids.getOrDefault(idsKey, this.id);
         }
 
-        // If no value in the field, sets the row_id to the next available identifier value
-        if (row_id == null) {
-            row_id = this.id;
+        // If no value in the field, sets the rowId to the next available identifier value
+        if (rowId == null) {
+            rowId = this.id;
         }
 
-        return row_id;
+        return rowId;
     }
 
-    // Method to place keys into a dictionary. If the key exists the key-value pair does not change. Otherwise, place it in the dictionary and assign it a new id
-    private void add_key_to_dict(String ids_key, int iden) {
-        this.ids.putIfAbsent(ids_key, iden);
+    private void addKeyToDict(String idsKey, int iden) {
+        // Places keys into a dictionary. If the key exists the key-value pair does not change. Otherwise, place it in the dictionary and assign it a new id.
+        this.ids.put(idsKey, this.ids.getOrDefault(idsKey, iden));
     }
 
-    // Method to create a copy of the file with unique ids prepended to each row
-    private void write_csv(CSVReader reader, String[] header) {
-        try {
-            CSVWriter writer = new CSVWriter(new FileWriter("output_file.csv"));
-
+    private void writeCsv(BufferedReader reader) {
+        // Using a csv writer, creates a copy of the file with unique ids prepended to each row.
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("output_file.csv"))) {
             // Add 'id' column to header
-            String[] new_header = new String[header.length + 1];
-            new_header[0] = "id";
-            System.arraycopy(header, 0, new_header, 1, header.length);
+            String[] newHeader = new String[this.header.length + 1];
+            newHeader[0] = "id";
+            System.arraycopy(this.header, 0, newHeader, 1, this.header.length);
 
             // Write header row to new file
-            writer.writeNext(new_header);
+            writer.write(String.join(",", newHeader));
+            writer.newLine();
 
             // Runs matching type tests based on match type given
-            String[] row;
-            while ((row = reader.readNext()) != null) {
-                Integer row_id = null;
-                Integer email_row_id = null;
-                Integer phone_row_id = null;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] row = line.split(",");
+                Integer rowId = null;
+                Integer emailRowId = null;
+                Integer phoneRowId = null;
 
                 // If the matching type is 'email'
-                if (this.matching_type.equals("email")) {
-                    String email2 = (this.email_col_2 != null) ? row[this.email_col_2] : null;
-                    String email1 = (this.email_col != null) ? row[this.email_col] : null;
-                    Integer min_id = null;
+                if (this.matchingType.equals("email")) {
+                    String email2 = null;
+                    String email1 = null;
+                    Integer minId = null;
+
+                    // Check if email columns exist
+                    if (this.emailCol2 != null) {
+                        email2 = row[this.emailCol2];
+                    }
+                    if (this.emailCol != null) {
+                        email1 = row[this.emailCol];
+                    }
 
                     // Check if either email is in ids dictionary, get the value
                     if (this.ids.containsKey(email2) || this.ids.containsKey(email1)) {
-                        Integer email2_exists = this.ids.get(email2);
-                        Integer email_exists = this.ids.get(email1);
+                        Integer email2Exists = this.ids.get(email2);
+                        Integer emailExists = this.ids.get(email1);
 
-                        // If multiple values exist, find the lowest and set that to min_id (row_id)
-                        List<Integer> id_values = Arrays.asList(email2_exists, email_exists);
-                        min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                        // If multiple values exist, find the lowest and set that to minId (rowId)
+                        List<Integer> idValues = Arrays.asList(email2Exists, emailExists);
+                        minId = idValues.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
                     }
 
                     // See if a second email column exists
-                    row_id = this.email_match(row, min_id);
+                    rowId = this.emailMatch(row, minId);
                 }
 
                 // If the matching type is 'phone'
-                else if (this.matching_type.equals("phone")) {
-                    String phone2 = (this.phone_col_2 != null) ? this.format_phone(row, this.phone_col_2) : null;
-                    String phone1 = (this.phone_col != null) ? this.format_phone(row, this.phone_col) : null;
-                    Integer min_id = null;
+                else if (this.matchingType.equals("phone")) {
+                    String phone2 = null;
+                    String phone1 = null;
+                    Integer minId = null;
 
-                    // Check if either phone is in ids dictionary, get the value
+                    // Check if phone columns exist
+                    if (this.phoneCol2 != null) {
+                        phone2 = this.formatPhone(row, this.phoneCol2);
+                    }
+                    if (this.phoneCol != null) {
+                        phone1 = this.formatPhone(row, this.phoneCol);
+                    }
+
+                    // Check if either email is in ids dictionary, get the value
                     if (this.ids.containsKey(phone2) || this.ids.containsKey(phone1)) {
-                        Integer phone2_exists = this.ids.get(phone2);
-                        Integer phone_exists = this.ids.get(phone1);
+                        Integer phone2Exists = this.ids.get(phone2);
+                        Integer phoneExists = this.ids.get(phone1);
 
-                        // If multiple values exist, find the lowest and set that to min_id (row_id)
-                        List<Integer> id_values = Arrays.asList(phone2_exists, phone_exists);
-                        min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                        // If multiple values exist, find the lowest and set that to minId (rowId)
+                        List<Integer> idValues = Arrays.asList(phone2Exists, phoneExists);
+                        minId = idValues.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
                     }
 
                     // See if a second phone column exists
-                    row_id = this.phone_match(row, min_id);
+                    rowId = this.phoneMatch(row, minId);
                 }
 
                 // If the matching type is email OR phone
-                else if (this.matching_type.equals("email_phone")) {
-                    String email2 = (this.email_col_2 != null) ? row[this.email_col_2] : null;
-                    String email1 = (this.email_col != null) ? row[this.email_col] : null;
-                    String phone2 = (this.phone_col_2 != null) ? this.format_phone(row, this.phone_col_2) : null;
-                    String phone1 = (this.phone_col != null) ? this.format_phone(row, this.phone_col) : null;
-                    Integer min_id = null;
+                else if (this.matchingType.equals("email_phone")) {
+                    String email2 = null;
+                    String email1 = null;
+                    String phone2 = null;
+                    String phone1 = null;
+                    Integer minId = null;
+
+                    // Check if email and phone columns exist
+                    if (this.emailCol2 != null) {
+                        email2 = row[this.emailCol2];
+                    }
+                    if (this.emailCol != null) {
+                        email1 = row[this.emailCol];
+                    }
+                    if (this.phoneCol2 != null) {
+                        phone2 = this.formatPhone(row, this.phoneCol2);
+                    }
+                    if (this.phoneCol != null) {
+                        phone1 = this.formatPhone(row, this.phoneCol);
+                    }
 
                     // Check if either email or phone is in ids dictionary, get the value
                     if (this.ids.containsKey(email2) || this.ids.containsKey(email1) || this.ids.containsKey(phone2) || this.ids.containsKey(phone1)) {
-                        Integer email2_exists = this.ids.get(email2);
-                        Integer email_exists = this.ids.get(email1);
-                        Integer phone2_exists = this.ids.get(phone2);
-                        Integer phone_exists = this.ids.get(phone1);
+                        Integer email2Exists = this.ids.get(email2);
+                        Integer emailExists = this.ids.get(email1);
+                        Integer phone2Exists = this.ids.get(phone2);
+                        Integer phoneExists = this.ids.get(phone1);
 
-                        // If multiple values exist, find the lowest and set that to min_id (row_id)
-                        List<Integer> id_values = Arrays.asList(email2_exists, email_exists, phone2_exists, phone_exists);
-                        min_id = id_values.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
-                        row_id = min_id;
+                        // If multiple values exist, find the lowest and set that to minId (rowId)
+                        List<Integer> idValues = Arrays.asList(email2Exists, emailExists, phone2Exists, phoneExists);
+                        minId = idValues.stream().filter(Objects::nonNull).min(Integer::compare).orElse(null);
+                        rowId = minId;
                     }
 
-                    email_row_id = this.email_match(row, min_id);
-                    phone_row_id = this.phone_match(row, min_id);
+                    emailRowId = this.emailMatch(row, minId);
+                    phoneRowId = this.phoneMatch(row, minId);
 
-                    if (email_row_id < phone_row_id) {
-                        row_id = email_row_id;
+                    if (emailRowId < phoneRowId) {
+                        rowId = emailRowId;
                     } else {
-                        row_id = phone_row_id;
+                        rowId = phoneRowId;
                     }
                 }
 
                 // Writes a new row with the id appended
-                String[] new_row = new String[row.length + 1];
-                new_row[0] = row_id.toString();
-                System.arraycopy(row, 0, new_row, 1, row.length);
-                writer.writeNext(new_row);
+                String[] newRow = new String[row.length + 1];
+                newRow[0] = rowId.toString();
+                System.arraycopy(row, 0, newRow, 1, row.length);
+                writer.write(String.join(",", newRow));
+                writer.newLine();
 
                 // Increments id in ids dictionary for unique row ids
-                this.id++;
+                this.id += 1;
             }
-
-            writer.close();
-
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
