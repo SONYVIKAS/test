@@ -2,58 +2,53 @@ class Node {
     int data;
     Node left, right;
 
-    // Node constructor
-    public Node(int item) {
-        data = item;
-        left = right = null;
+    // Constructor to create a new node with data and optional left/right nodes
+    Node(int data, Node left, Node right) {
+        this.data = data;
+        this.left = left;
+        this.right = right;
     }
 
-    // Function to insert a new node in the BST
-    void insert(int new_data) {
-        // If the tree is empty, assign a new node address to the root
-        if (new_data < this.data) {
+    Node(int data) {
+        this(data, null, null);
+    }
+
+    // Method to insert a new node with 'newData' to BST tree rooted here
+    void insert(int newData) {
+        // If the new data is less than the current node's data
+        if (newData < this.data) {
+            // If the left child is null, create a new node and assign it to the left child
             if (this.left == null) {
-                this.left = new Node(new_data);
-            } else {
-                this.left.insert(new_data);
+                this.left = new Node(newData);
+            } 
+            // If the left child is not null, recursively call the insert method on the left child
+            else {
+                this.left.insert(newData);
             }
-        } else {
+        } 
+        // If the new data is greater than or equal to the current node's data
+        else {
+            // If the right child is null, create a new node and assign it to the right child
             if (this.right == null) {
-                this.right = new Node(new_data);
-            } else {
-                this.right.insert(new_data);
+                this.right = new Node(newData);
+            } 
+            // If the right child is not null, recursively call the insert method on the right child
+            else {
+                this.right.insert(newData);
             }
         }
     }
 }
 
-// Driver class
+// Main class to test the Node class and its methods
 public class Main {
     public static void main(String[] args) {
         // Create a new BST
-        Node t = new Node(4);
-        t.left = new Node(2);
-        t.right = new Node(7);
-        t.left.left = new Node(1);
-        t.left.right = new Node(3);
-        t.right.left = new Node(5);
-        t.right.right = new Node(8);
+        Node t = new Node(4, new Node(2, new Node(1), new Node(3)), new Node(7, new Node(5), new Node(8)));
 
-        // Insert new nodes
+        // Insert new nodes and print the BST to check if the nodes are inserted correctly
         t.insert(0);
         t.insert(9);
         t.insert(6);
-
-        // Print the BST
-        printInorder(t);
-    }
-
-    // Function to do inorder traversal of BST
-    static void printInorder(Node node) {
-        if (node == null) {
-            return;
-        }
-        printInorder(node.left);
-        System.out.print(node.data + " ");
-        printInorder(node.right);
+        // Print the BST or use a method to traverse and print the BST to check the result
     }
