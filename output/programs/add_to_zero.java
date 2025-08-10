@@ -3,10 +3,10 @@ import java.util.Set;
 public class Main {
     public static void main(String[] args) {
         // Test cases
-        System.out.println(addToZero(new int[]{})); // false
-        System.out.println(addToZero(new int[]{1})); // false
-        System.out.println(addToZero(new int[]{1, 2, 3})); // false
-        System.out.println(addToZero(new int[]{1, 2, 3, -2})); // true
+        System.out.println(addToZero(new int[]{})); // False
+        System.out.println(addToZero(new int[]{1})); // False
+        System.out.println(addToZero(new int[]{1, 2, 3})); // False
+        System.out.println(addToZero(new int[]{1, 2, 3, -2})); // True
     }
 
     // Given list of ints, return True if any two nums sum to 0.
