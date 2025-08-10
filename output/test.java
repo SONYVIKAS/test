@@ -1,127 +1,146 @@
-import java.io.*;
 import java.util.*;
 import java.util.regex.*;
-import com.itextpdf.text.pdf.*;
-import com.itextpdf.text.pdf.parser.*;
-import org.apache.commons.csv.*;
-import javax.swing.*;
-import java.awt.event.*;
+import java.util.stream.Collectors;
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.canvas.parser.*;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.*;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.WordUtils;
+import com.streamlit.Streamlit;
+import com.streamlit.components.file_uploader.FileUploader;
+import com.streamlit.components.radio.Radio;
+import com.streamlit.components.text.Text;
+import com.streamlit.components.dataframe.DataFrame;
+import com.streamlit.components.download_button.DownloadButton;
 
 public class PDFDataExtractionTool {
 
     public static void main(String[] args) {
-        // Create a JFrame for the GUI
-        JFrame frame = new JFrame("PDF Data Extraction Tool");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 300);
+        Streamlit st = new Streamlit();
 
-        // Create radio buttons for genre selection
-        JRadioButton visawaaleButton = new JRadioButton("visawaale");
-        JRadioButton jetsaveButton = new JRadioButton("Jetsave");
-        ButtonGroup group = new ButtonGroup();
-        group.add(visawaaleButton);
-        group.add(jetsaveButton);
+        // Title of the Streamlit App
+        st.title("PDF Data Extraction Tool");
 
-        // Create a file chooser for PDF file selection
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setMultiSelectionEnabled(true);
+        // Radio button for genre selection
+        Radio genre = st.radio("", Arrays.asList("visawaale", "Jetsave"), null);
 
-        // Create a button to trigger file upload
-        JButton uploadButton = new JButton("Upload PDF files");
+        if ("visawaale".equals(genre.getValue())) {
+            st.title("Visawaale");
 
-        // Create a text area to display extracted data
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(false);
+            // File uploader for PDF files
+            FileUploader uploadedFiles = st.file_uploader("Upload PDF files", "pdf", true);
 
-        // Add components to the frame
-        frame.getContentPane().add(visawaaleButton, "North");
-        frame.getContentPane().add(jetsaveButton, "Center");
-        frame.getContentPane().add(uploadButton, "South");
-        frame.getContentPane().add(new JScrollPane(textArea), "East");
+            if (!uploadedFiles.getFiles().isEmpty()) {
+                List<Map<String, String>> dataList = new ArrayList<>();
 
-        // Action listener for the upload button
-        uploadButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-                    File[] files = fileChooser.getSelectedFiles();
-                    if (visawaaleButton.isSelected()) {
-                        // Extract data for "visawaale"
-                        List<Map<String, String>> dataList = new ArrayList<>();
-                        Pattern[] patterns = {
-                            Pattern.compile("Reference No\\. & Date\\.\\s*([\\w-]+)"),
-                            Pattern.compile("Other References\\s*([\\w\\d]+)"),
-                            Pattern.compile("Service Charges?.*\\s([\\d,]+\\.\\d{2})"),
-                            Pattern.compile("IGST @\\d+%.*?([\\d,]+\\.\\d{2})"),
-                            Pattern.compile("IGST @(\\d+%)"),
-                            Pattern.compile("([A-Za-z]+)\\s*Visa\\s*Fee")
-                        };
-                        for (File file : files) {
-                            try {
-                                PdfReader reader = new PdfReader(new FileInputStream(file));
-                                StringBuilder pdfText = new StringBuilder();
-                                for (int i = 1; i <= reader.getNumberOfPages(); i++) {
-                                    pdfText.append(PdfTextExtractor.getTextFromPage(reader, i));
-                                }
-                                reader.close();
-                                Map<String, String> extractedData = new HashMap<>();
-                                for (Pattern pattern : patterns) {
-                                    Matcher matcher = pattern.matcher(pdfText);
-                                    if (matcher.find()) {
-                                        extractedData.put(pattern.pattern(), matcher.group(1).trim());
-                                    }
-                                }
-                                Matcher totalInWordsMatcher = Pattern.compile("INR\\s*(.*?)\\s*Only", Pattern.CASE_INSENSITIVE).matcher(pdfText);
-                                if (totalInWordsMatcher.find()) {
-                                    String totalInWords = totalInWordsMatcher.group(1).trim();
-                                    try {
-                                        extractedData.put("Total", String.valueOf(wordToNum(totalInWords.toLowerCase())));
-                                    } catch (Exception ex) {
-                                        extractedData.put("Total", "Conversion Error");
-                                    }
-                                }
-                                dataList.add(extractedData);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                        }
-                        displayData(textArea, dataList);
-                    } else if (jetsaveButton.isSelected()) {
-                        // Extract data for "Jetsave"
-                        List<Map<String, String>> allInvoiceDetails = new ArrayList<>();
-                        for (File file : files) {
-                            try {
-                                String pdfText = extractTextFromPdf(file);
-                                Map<String, String> invoiceDetails = parseTextToDataframe(pdfText);
-                                allInvoiceDetails.add(invoiceDetails);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                        }
-                        displayData(textArea, allInvoiceDetails);
+                // Patterns to extract specific fields
+                Map<String, String> patterns = new HashMap<>();
+                patterns.put("Reference No.", "Reference No\\. & Date\\.\\s*([\\w-]+)");
+                patterns.put("Other References", "Other References\\s*([\\w\\d]+)");
+                patterns.put("Service Charge", "Service Charges?.*\\s([\\d,]+\\.\\d{2})");
+                patterns.put("IGST Amount", "IGST @\\d+%.*?([\\d,]+\\.\\d{2})");
+                patterns.put("IGST Rate", "IGST @(\\d+%)");
+                patterns.put("Country Before Visa", "([A-Za-z]+)\\s*Visa\\s*Fee");
+
+                // Loop through each uploaded PDF file
+                for (InputStream uploadedFile : uploadedFiles.getFiles()) {
+                    String pdfText = extractTextFromPdf(uploadedFile);
+
+                    // Extract data for the current PDF
+                    Map<String, String> extractedData = new HashMap<>();
+                    for (Map.Entry<String, String> entry : patterns.entrySet()) {
+                        Matcher matcher = Pattern.compile(entry.getValue()).matcher(pdfText);
+                        extractedData.put(entry.getKey(), matcher.find() ? matcher.group(1).trim() : null);
                     }
-                }
-            }
-        });
 
-        // Set frame visibility
-        frame.setVisible(true);
+                    // Extract "Total (in words)" and convert to numeric value
+                    Matcher totalInWordsMatcher = Pattern.compile("INR\\s*(.*?)\\s*Only", Pattern.CASE_INSENSITIVE).matcher(pdfText);
+                    if (totalInWordsMatcher.find()) {
+                        String totalInWords = totalInWordsMatcher.group(1).trim();
+                        try {
+                            extractedData.put("Total", String.valueOf(wordToNum(totalInWords.toLowerCase())));
+                        } catch (Exception e) {
+                            extractedData.put("Total", "Conversion Error");
+                        }
+                    }
+
+                    // Append the extracted data to the list
+                    dataList.add(extractedData);
+                }
+
+                // Create a DataFrame from the extracted data
+                DataFrame df = new DataFrame(dataList);
+
+                // Display the extracted data in Streamlit
+                st.dataframe(df);
+
+                // Provide an option to download the data as a CSV
+                String csv = df.toCsv();
+                st.download_button("Download Extracted Data as CSV", csv, "extracted_data.csv", "text/csv");
+            } else {
+                st.warning("Please upload PDF files to proceed.");
+            }
+        } else if ("Jetsave".equals(genre.getValue())) {
+            st.title("Jetsave");
+
+            // Multi-file uploader
+            FileUploader uploadedFiles = st.file_uploader("Upload PDF files", "pdf", true, "jetsave_uploader");
+
+            if (!uploadedFiles.getFiles().isEmpty()) {
+                List<Map<String, String>> allInvoiceDetails = new ArrayList<>();
+
+                // Process each uploaded file
+                for (InputStream uploadedFile : uploadedFiles.getFiles()) {
+                    String pdfText = extractTextFromPdf(uploadedFile);
+                    Map<String, String> invoiceDetails = parseTextToDataframe(pdfText);
+
+                    // Store data from each file
+                    allInvoiceDetails.add(invoiceDetails);
+                }
+
+                // Convert all results into a single DataFrame
+                DataFrame combinedInvoiceDetailsDf = new DataFrame(allInvoiceDetails);
+
+                // Display combined results
+                st.write("All Invoice Details in a Single Table:");
+                st.dataframe(combinedInvoiceDetailsDf);
+
+                // Option to save as CSV
+                st.download_button("Download Invoice Details as CSV", combinedInvoiceDetailsDf.toCsv(), "invoice_details.csv", "text/csv");
+            }
+        }
     }
 
-    // Method to extract text from a PDF file
-    private static String extractTextFromPdf(File file) throws IOException {
-        PdfReader reader = new PdfReader(new FileInputStream(file));
+    // Function to extract text from a PDF
+    private static String extractTextFromPdf(InputStream file) {
         StringBuilder text = new StringBuilder();
-        for (int i = 1; i <= reader.getNumberOfPages(); i++) {
-            text.append(PdfTextExtractor.getTextFromPage(reader, i)).append("\n");
+        try (PdfReader reader = new PdfReader(file)) {
+            PdfDocument pdfDoc = new PdfDocument(reader);
+            for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+                text.append(PdfTextExtractor.getTextFromPage(pdfDoc.getPage(i), new SimpleTextExtractionStrategy())).append("\n");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        reader.close();
         return text.toString();
     }
 
-    // Method to parse extracted text into structured data
+    // Function to parse the extracted text into structured JSON
     private static Map<String, String> parseTextToDataframe(String text) {
-        String[] lines = text.split("\n");
         Map<String, String> invoiceDetails = new HashMap<>();
+        invoiceDetails.put("invoice_number", null);
+        invoiceDetails.put("corporate", null);
+        invoiceDetails.put("date", null);
+        invoiceDetails.put("pax_name", null);
+        invoiceDetails.put("country", null);
+        invoiceDetails.put("total_amount", null);
+        invoiceDetails.put("igst", null);
+        invoiceDetails.put("cgst", null);
+        invoiceDetails.put("sgst", null);
+        invoiceDetails.put("net_amount", null);
+
+        String[] lines = text.split("\\r?\\n");
         for (String line : lines) {
             if (line.contains("Invoice No")) {
                 invoiceDetails.put("invoice_number", line.split(":")[1].trim().replace("DEL", ""));
@@ -130,39 +149,27 @@ public class PDFDataExtractionTool {
             } else if (line.contains("Pax Name :")) {
                 invoiceDetails.put("pax_name", line.split(":")[1].trim());
             } else if (line.contains("VISA Fee")) {
-                String[] descriptionParts = line.split(" ");
-                invoiceDetails.put("country", descriptionParts[0]);
+                String[] descriptionParts = line.split("\\s+");
+                invoiceDetails.put("country", descriptionParts.length > 0 ? descriptionParts[0] : null);
             } else if (line.contains("Corporate") || line.startsWith("IN")) {
                 invoiceDetails.put("corporate", line.split(":")[1].trim().split("/")[0].trim());
             } else if (line.contains("Total") && line.trim().startsWith("Total")) {
-                invoiceDetails.put("total_amount", line.split(" ")[line.split(" ").length - 1].trim());
+                invoiceDetails.put("total_amount", line.split("\\s+")[line.split("\\s+").length - 1].trim());
             } else if (line.contains("IGST")) {
-                invoiceDetails.put("igst", line.split(" ")[line.split(" ").length - 1].trim());
+                invoiceDetails.put("igst", line.split("\\s+")[line.split("\\s+").length - 1].trim());
             } else if (line.contains("CGST")) {
-                invoiceDetails.put("cgst", line.split(" ")[line.split(" ").length - 1].trim());
+                invoiceDetails.put("cgst", line.split("\\s+")[line.split("\\s+").length - 1].trim());
             } else if (line.contains("SGST")) {
-                invoiceDetails.put("sgst", line.split(" ")[line.split(" ").length - 1].trim());
+                invoiceDetails.put("sgst", line.split("\\s+")[line.split("\\s+").length - 1].trim());
             } else if (line.contains("Net Amount")) {
-                invoiceDetails.put("net_amount", line.split(" ")[line.split(" ").length - 1].trim());
+                invoiceDetails.put("net_amount", line.split("\\s+")[line.split("\\s+").length - 1].trim());
             }
         }
         return invoiceDetails;
     }
 
-    // Method to display extracted data in the text area
-    private static void displayData(JTextArea textArea, List<Map<String, String>> dataList) {
-        StringBuilder displayText = new StringBuilder();
-        for (Map<String, String> data : dataList) {
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                displayText.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-            }
-            displayText.append("\n");
-        }
-        textArea.setText(displayText.toString());
-    }
-
-    // Dummy method to convert words to numbers (replace with actual implementation)
+    // Function to convert words to numbers
     private static int wordToNum(String words) {
         // Implement word to number conversion logic
-        return 0;
+        return 0; // Placeholder
     }
