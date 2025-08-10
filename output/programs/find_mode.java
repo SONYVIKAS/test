@@ -2,22 +2,22 @@
 public class Main {
     public static void main(String[] args) {
         // Test cases
-        System.out.println(findMode(new int[]{3,5,6,2,6,7,8,3,6,6})); // Expected output: [6]
-        System.out.println(findMode(new int[]{1,2,3,4,5})); // Expected output: [1, 2, 3, 4, 5]
-        System.out.println(findMode(new int[]{2,1,2,1})); // Expected output: [1, 2]
-        System.out.println(findMode(new int[]{1,2,3,2,4})); // Expected output: [2]
-        System.out.println(findMode(new int[]{})); // Expected output: []
+        System.out.println(findMode(new int[]{3,5,6,2,6,7,8,3,6,6})); // Output: [6]
+        System.out.println(findMode(new int[]{1,2,3,4,5})); // Output: [1, 2, 3, 4, 5]
+        System.out.println(findMode(new int[]{2,1,2,1})); // Output: [1, 2]
+        System.out.println(findMode(new int[]{1,2,3,2,4})); // Output: [2]
+        System.out.println(findMode(new int[]{})); // Output: []
     }
 
-    public static List<Integer> findMode(int[] arr) {
-        // If the array is empty, return an empty list
+    public static Set<Integer> findMode(int[] arr) {
+        // If array is empty, return an empty set
         if (arr.length == 0) {
-            return new ArrayList<>();
+            return new HashSet<>();
         }
 
-        // If the array has only one element, return a list with that element
+        // If array has only one element, return a set with that element
         if (arr.length < 2) {
-            return Arrays.asList(arr[0]);
+            return new HashSet<>(Collections.singletonList(arr[0]));
         }
 
         // Create a map to store the frequency of each number
@@ -26,13 +26,15 @@ public class Main {
             nums.put(num, nums.getOrDefault(num, 0) + 1);
         }
 
-        // Find the maximum frequency
-        int maxFrequency = Collections.max(nums.values());
-
-        // Find the numbers with the maximum frequency
-        List<Integer> modes = new ArrayList<>();
+        // Find the mode(s)
+        Set<Integer> modes = new HashSet<>();
+        int maxCount = 0;
         for (Map.Entry<Integer, Integer> entry : nums.entrySet()) {
-            if (entry.getValue() == maxFrequency) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                modes.clear();
+                modes.add(entry.getKey());
+            } else if (entry.getValue() == maxCount) {
                 modes.add(entry.getKey());
             }
         }
