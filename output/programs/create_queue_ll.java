@@ -20,7 +20,7 @@ class Queue {
         this.tail = null;
     }
 
-    // Method to get the length of the queue
+    // Method to get length of queue
     public int length() {
         Node curr = this.head;
         int length = 0;
@@ -33,7 +33,7 @@ class Queue {
         return length;
     }
 
-    // Method to add an item to the end of the queue
+    // Method to add item to end of queue
     public void enqueue(Object item) {
         Node new_node = new Node(item);
 
@@ -46,7 +46,7 @@ class Queue {
         }
     }
 
-    // Method to remove an item from the front of the queue
+    // Method to remove item from start of queue
     public Object dequeue() {
         if (this.head == null) {
             return null;
@@ -57,17 +57,17 @@ class Queue {
         }
     }
 
-    // Method to check if the queue is empty
+    // Method to check if queue is empty
     public boolean isEmpty() {
         return this.head == null;
     }
 
-    // Method to get the first item in the queue without removing it
+    // Method to return but not remove the first item in the queue
     public Object peek() {
         return this.head.data;
     }
 
-    // Method to print the items in the queue
+    // Method to print items in queue
     public void printQueue() {
         Node curr = this.head;
 
