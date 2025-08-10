@@ -1,35 +1,34 @@
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import java.util.List;
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
+// Define the class
 public class Main {
 
-    // Function to find the longest word in a list of words
-    public static int findLongestWord(List<String> words) {
-        int longest = 0;
+    // Method to find the longest word in an array of words
+    public static int findLongestWord(String[] words) {
+        int longest = 0; // Initialize the longest word length to 0
 
-        // Iterate through each word in the list
+        // Iterate through each word in the array
         for (String word : words) {
-            // Update the longest word length if current word length is greater
-            longest = Math.max(word.length(), longest);
+            longest = Math.max(word.length(), longest); // Update the longest word length if current word is longer
         }
 
-        // Return the length of the longest word
-        return longest;
+        return longest; // Return the length of the longest word
     }
 
-    // Unit test class
+    // Define the test class
     public static class TestSolution {
 
+        // Test method for findLongestWord
         @Test
-        // Test case for findLongestWord function
         public void testFindLongestWord() {
-            assertEquals(5, Main.findLongestWord(List.of("hi", "hello")));
-            assertEquals(12, Main.findLongestWord(List.of("Balloonicorn", "Hackbright")));
+            assertEquals(5, Main.findLongestWord(new String[]{"hi", "hello"})); // Test case 1
+            assertEquals(12, Main.findLongestWord(new String[]{"Balloonicorn", "Hackbright"})); // Test case 2
         }
     }
 
+    // Main method to run the tests
     public static void main(String[] args) {
-        // Run the tests
-        org.junit.jupiter.api.Assertions.run(TestSolution.class);
+        TestSolution testSolution = new TestSolution();
+        testSolution.testFindLongestWord();
     }
