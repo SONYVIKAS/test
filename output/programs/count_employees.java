@@ -1,71 +1,72 @@
 import java.util.ArrayList;
+import java.util.List;
 
-// Define Node class
-public class Node {
-    // Node attributes
-    private String name;
-    private ArrayList<Node> children;
+// Node class representing each employee
+class Node {
+    String name;
+    List<Node> children;
 
     // Node constructor
-    public Node(String name, ArrayList<Node> children) {
+    public Node(String name, List<Node> children) {
         this.name = name;
         this.children = children;
     }
 
-    // Overloaded Node constructor for nodes without children
     public Node(String name) {
         this.name = name;
         this.children = new ArrayList<>();
     }
 
-    // Method to count employees
+    // Method to count the number of employees under a manager
     public int countEmployees() {
-        // If node has no children, return 0
+        // If the node has no children, return 0
         if (this.children.isEmpty()) {
             return 0;
         }
 
         int count = 0;
 
-        // Iterate over children nodes
+        // For each child, add 1 to the count and recursively count the child's employees
         for (Node child : this.children) {
-            // Increment count by 1 plus the number of employees under the child
             count += 1 + child.countEmployees();
         }
 
         return count;
     }
+}
 
+// Main class
+public class Main {
     public static void main(String[] args) {
-        // Test cases
+        // Create nodes
         Node henri = new Node("Henri");
-        ArrayList<Node> noraChildren = new ArrayList<>();
-        noraChildren.add(henri);
-        Node nora = new Node("Nora", noraChildren);
+        List<Node> childrenNora = new ArrayList<>();
+        childrenNora.add(henri);
+        Node nora = new Node("Nora", childrenNora);
 
         Node nick = new Node("Nick");
-        ArrayList<Node> janetChildren = new ArrayList<>();
-        janetChildren.add(nick);
-        janetChildren.add(nora);
-        Node janet = new Node("Janet", janetChildren);
+        List<Node> childrenJanet = new ArrayList<>();
+        childrenJanet.add(nick);
+        childrenJanet.add(nora);
+        Node janet = new Node("Janet", childrenJanet);
 
         Node al = new Node("Al");
         Node bob = new Node("Bob");
         Node jen = new Node("Jen");
-        ArrayList<Node> jessicaChildren = new ArrayList<>();
-        jessicaChildren.add(al);
-        jessicaChildren.add(bob);
-        jessicaChildren.add(jen);
-        Node jessica = new Node("Jessica", jessicaChildren);
+        List<Node> childrenJessica = new ArrayList<>();
+        childrenJessica.add(al);
+        childrenJessica.add(bob);
+        childrenJessica.add(jen);
+        Node jessica = new Node("Jessica", childrenJessica);
 
-        ArrayList<Node> janeChildren = new ArrayList<>();
-        janeChildren.add(jessica);
-        janeChildren.add(janet);
-        Node jane = new Node("Jane", janeChildren);
+        List<Node> childrenJane = new ArrayList<>();
+        childrenJane.add(jessica);
+        childrenJane.add(janet);
+        Node jane = new Node("Jane", childrenJane);
 
-        // Print test results
-        System.out.println(henri.countEmployees());  // Expected output: 0
-        System.out.println(janet.countEmployees());  // Expected output: 3
-        System.out.println(jessica.countEmployees());  // Expected output: 3
-        System.out.println(jane.countEmployees());  // Expected output: 8
+        // Print the number of employees each person manages
+        System.out.println(henri.countEmployees()); // 0
+        System.out.println(janet.countEmployees()); // 3
+        System.out.println(jessica.countEmployees()); // 3
+        System.out.println(jane.countEmployees()); // 8
     }
