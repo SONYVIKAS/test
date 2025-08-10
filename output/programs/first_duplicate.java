@@ -1,45 +1,44 @@
 
 public class Main {
+
     // Method to find the first duplicate in an array
     public static int firstDuplicate(int[] a) {
-        // Time: O(n^2)
-        // Space: O(n)
-
-        int lowestIndex = a.length;
+        // Initialize lowest_index to the length of the array
+        int lowest_index = a.length;
         for (int i = 0; i < a.length; i++) {
             int num = a[i];
+            // Check if num is in the rest of the array
             for (int j = i + 1; j < a.length; j++) {
                 if (a[j] == num) {
-                    if (j < lowestIndex) {
-                        lowestIndex = j;
+                    // If num is in the rest of the array, update lowest_index
+                    if (j < lowest_index) {
+                        lowest_index = j;
                     }
                     break;
                 }
             }
         }
-
-        if (lowestIndex < a.length) {
-            return a[lowestIndex];
+        // If lowest_index is less than the length of the array, return the element at lowest_index
+        if (lowest_index < a.length) {
+            return a[lowest_index];
         }
-
+        // If no duplicate is found, return -1
         return -1;
     }
 
     // Optimized method to find the first duplicate in an array
     public static int firstDuplicateOptimized(int[] arr) {
-        // Time: O(n)
-        // Space: O(1)
-
         for (int i = 0; i < arr.length; i++) {
-            int value = arr[Math.abs(arr[i]) - 1];
-
-            if (value >= 0) {
-                arr[Math.abs(arr[i]) - 1] = -value;
+            int value = Math.abs(arr[i]) - 1;
+            // If the value at index value is positive, make it negative
+            if (arr[value] > 0) {
+                arr[value] = -arr[value];
             } else {
-                return Math.abs(arr[i]);
+                // If the value at index value is negative, return value + 1
+                return value + 1;
             }
         }
-
+        // If no duplicate is found, return -1
         return -1;
     }
 
